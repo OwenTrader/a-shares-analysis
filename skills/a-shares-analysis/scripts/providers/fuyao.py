@@ -45,7 +45,8 @@ class FuyaoProvider:
 
     # capital-flow / high-frequency intentionally excluded (not open externally)
     capabilities = {
-        "search", "daily_kline", "quote", "valuation", "fin_indicators",
+        "search", "daily_kline", "quote", "fund_kline", "fund_quote",
+        "valuation", "fin_indicators",
         "income_statements", "balance_sheets", "cash_flow_statements",
         "corp_actions", "calendar", "index_kline", "index_quote",
         "index_constituents", "hot_rank_trend",
@@ -141,6 +142,19 @@ class FuyaoProvider:
     def quote(self, thscodes: list[str]) -> list[dict]:
         data = self._get("/api/a-share/prices/snapshot", {"thscodes": ",".join(thscodes)})
         return [_quote(it) for it in (data or {}).get("item", [])]
+
+    def fund_kline(self, thscode: str, start_ms: int, end_ms: int) -> list[dict]:
+        # ETF only (LOF/OTF/REITs -> code 3004); forward-adjusted; window <= 5 natural years
+        data = self._get("/api/fund/market/historical", {
+            "thscode": thscode, "interval": "1d",
+            "start": int(start_ms), "end": int(end_ms),
+        })
+        return [_bar(it) for it in (data or {}).get("item", [])]
+
+    def fund_quote(self, thscode: str) -> dict:
+        data = self._get("/api/fund/market/snapshot", {"thscode": thscode})
+        items = (data or {}).get("item", [])
+        return _quote(items[0]) if items else {}
 
     # --------------------------------------------------------- fundamentals
     def valuation(self, thscodes: list[str]) -> list[dict]:

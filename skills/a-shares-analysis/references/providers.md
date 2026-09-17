@@ -95,6 +95,7 @@ _FACTORY_NAMES = {"fuyao": _make_fuyao, "tushare": _make_tushare}
 | 能力 | fuyao（默认） | 说明 |
 |------|---------------|------|
 | search / daily_kline / quote / calendar | ✓ | 日线前复权，窗口 ≤10 年 |
+| fund_kline / fund_quote | ✓ | **仅 ETF**，前复权，窗口 ≤5 自然年（LOF/场外 3004） |
 | valuation | ✓ | 仅最新快照，无历史分位 |
 | fin_indicators / 三大报表 | ✓ | 按报告期逐期 |
 | corp_actions | ✓ | 原始分红/送股事件 |

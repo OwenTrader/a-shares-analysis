@@ -41,12 +41,16 @@
 | 现金流量表 | `GET /api/a-share/financials/cash-flow-statements` | 同上 | — |
 | 复权事件 | `GET /api/a-share/corporate-actions/adjustment-factors` | `thscode`, `from`,`to`(YYYY-MM-DD) | 分红/送股原始事件，最新在前 |
 | 交易日历 | `GET /api/a-share/calendar/trading-days` | 无 | 近一年；新鲜度基准 |
+| ETF 日线 | `GET /api/fund/market/historical` | 单个 thscode，仅 ETF，≤5 年 | 前复权 |
 | 指数日线 | `GET /api/a-share-index/prices/historical` | `thscode`(单个), `interval=1d`, `start`,`end` | 无 adjust（指数无复权） |
 | 指数快照 | `GET /api/a-share-index/prices/snapshot` | `thscodes`(必) | 不支持空入参枚举 |
 | 指数成分 | `GET /api/a-share-index/constituents/ths-stock-list` | `thscode` | 沪深300、同花顺板块/行业 |
 | 指数目录 | `GET /api/a-share-index/catalog/ths-index-list` | `tag=cn_concept\|region\|tszs\|industry` | 全量不分页 |
 | 热榜排名走势 | `GET /api/a-share/special-data/hot-stock-rank-trend` | `thscode`, `start_date`,`end_date`(≤1年) | 排名越小越热；无 Top30 截断 |
 | 热股榜 | `GET /api/a-share/special-data/hot-stock-list` | `period=day\|hour` | Top30 |
+
+| ETF 行情快照 | `GET /api/fund/market/snapshot` | `thscode`(单个, 仅 ETF) | LOF/场外/REITs 返回 3004 |
+| ETF 历史日线 | `GET /api/fund/market/historical` | `thscode`, `interval=1d`, `start`,`end` | **仅 ETF**；前复权；窗口 ≤5 自然年 |
 
 ## 未开放 / 不使用的能力
 

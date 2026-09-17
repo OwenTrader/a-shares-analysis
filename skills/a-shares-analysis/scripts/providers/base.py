@@ -28,6 +28,8 @@ CAPABILITIES = {
     "search",            # q -> [Ticker]
     "daily_kline",       # stock daily bars (adjusted)
     "quote",             # real-time-ish snapshot quote
+    "fund_kline",        # on-exchange fund (ETF) daily bars, forward-adjusted
+    "fund_quote",        # on-exchange fund (ETF) snapshot quote
     "valuation",         # PE/PB/PS/PCF
     "fin_indicators",    # 5-ability financial indicator set per report period
     "income_statements", # multi-period income statements
@@ -77,6 +79,14 @@ class DataProvider(Protocol):
         ...
 
     def quote(self, thscodes: list[str]) -> list[dict]:
+        ...
+
+    def fund_kline(self, thscode: str, start_ms: int, end_ms: int) -> list[dict]:
+        """On-exchange fund (ETF) daily bars, forward-adjusted, [Bar]."""
+        ...
+
+    def fund_quote(self, thscode: str) -> dict:
+        """On-exchange fund (ETF) snapshot quote."""
         ...
 
     # --- fundamentals -------------------------------------------------------

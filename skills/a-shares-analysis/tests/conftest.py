@@ -51,11 +51,31 @@ class FakeProvider:
 
     name = "fake"
     capabilities = {
-        "search", "daily_kline", "quote", "valuation", "fin_indicators",
+        "search", "daily_kline", "quote", "fund_kline", "fund_quote",
+        "valuation", "fin_indicators",
         "income_statements", "balance_sheets", "cash_flow_statements",
         "corp_actions", "calendar", "index_kline", "index_quote",
         "index_constituents", "hot_rank_trend",
     }
+
+    # fund universe entries surfaced when asset_type is a fund-*
+    FUND_DB = [
+        {"thscode": "512690.SH", "ticker": "512690", "name": "酒ETF",
+         "exchange": "SH", "asset_type": "fund-etf", "list_date": "2019-05-29", "end_date": None},
+        {"thscode": "510300.SH", "ticker": "510300", "name": "沪深300ETF",
+         "exchange": "SH", "asset_type": "fund-etf", "list_date": "2012-05-28", "end_date": None},
+    ]
+    # stock/index universe
+    db = [
+        {"thscode": "600519.SH", "ticker": "600519", "name": "贵州茅台",
+         "exchange": "SH", "asset_type": "a-share", "list_date": "2001-08-27", "end_date": None},
+        {"thscode": "000001.SZ", "ticker": "000001", "name": "平安银行",
+         "exchange": "SZ", "asset_type": "a-share", "list_date": "1991-04-03", "end_date": None},
+        {"thscode": "601318.SH", "ticker": "601318", "name": "中国平安",
+         "exchange": "SH", "asset_type": "a-share", "list_date": "2007-03-01", "end_date": None},
+        {"thscode": "000001.SH", "ticker": "000001", "name": "上证指数",
+         "exchange": "SH", "asset_type": "a-share-index", "list_date": "1990-12-19", "end_date": None},
+    ]
 
     def __init__(self, bars: list[dict] | None = None, benchmark_bars: list[dict] | None = None):
         self.bars = bars or synth_bars(300, drift=0.002)  # clear uptrend
@@ -68,27 +88,36 @@ class FakeProvider:
 
     def search(self, q, asset_type=None, limit=10):
         self.calls.append(f"search:{q}")
-        db = [
-            {"thscode": "600519.SH", "ticker": "600519", "name": "贵州茅台",
-             "exchange": "SH", "asset_type": "a-share", "list_date": "2001-08-27", "end_date": None},
-            {"thscode": "000001.SZ", "ticker": "000001", "name": "平安银行",
-             "exchange": "SZ", "asset_type": "a-share", "list_date": "1991-04-03", "end_date": None},
-            {"thscode": "601318.SH", "ticker": "601318", "name": "中国平安",
-             "exchange": "SH", "asset_type": "a-share", "list_date": "2007-03-01", "end_date": None},
-            {"thscode": "000001.SH", "ticker": "000001", "name": "上证指数",
-             "exchange": "SH", "asset_type": "a-share-index", "list_date": "1990-12-19", "end_date": None},
-        ]
         q = q.upper()
-        hits = [c for c in db if q in c["thscode"].upper() or q in (c["name"] or "")
+        hits = [c for c in self.db if q in c["thscode"].upper() or q in (c["name"] or "")
                 or q == c["ticker"]]
         if asset_type:
-            hits = [c for c in hits if c["asset_type"] == asset_type]
+            fund_types = {"fund-etf", "fund-lof", "fund-otc", "fund-reits"}
+            if asset_type in fund_types:
+                hits = [c for c in self.FUND_DB
+                        if q in c["thscode"].upper() or q in (c["name"] or "") or q == c["ticker"]]
+            else:
+                hits = [c for c in hits if c["asset_type"] == asset_type]
         return hits[:limit]
 
     def daily_kline(self, thscode, start_ms, end_ms, adjust="forward"):
         self.calls.append(f"daily_kline:{thscode}")
         self.last_bars = self.bars
         return self.bars
+
+    def fund_kline(self, thscode, start_ms, end_ms):
+        self.calls.append(f"fund_kline:{thscode}")
+        self.last_bars = self.bars
+        return self.bars
+
+    def fund_quote(self, thscode):
+        self.calls.append("fund_quote")
+        last, prev = self.bars[-1], self.bars[-2]
+        return {"thscode": thscode, "ticker": thscode.split(".")[0],
+                "last": last["close"], "chg": round(last["close"] - prev["close"], 3),
+                "chg_pct": round((last["close"] / prev["close"] - 1) * 100, 2),
+                "open": last["open"], "high": last["high"], "low": last["low"],
+                "prev": prev["close"], "volume": last["volume"], "turnover": last["turnover"]}
 
     def quote(self, thscodes):
         self.calls.append("quote")

@@ -190,9 +190,18 @@ def _settle_plan(plan: dict, bars: list[dict]) -> dict:
     return result
 
 
+def _bars_since(provider, decision: dict, thscode: str, end_ms: int) -> list[dict]:
+    """Post-decision daily bars (or fund/NAV bars) for settlement, ascending."""
+    from ash_common import date_to_ms
+
+    start = date_to_ms(decision["date"]) + 1
+    if decision.get("asset_type") == "fund-etf" and provider.has("fund_kline"):
+        return provider.fund_kline(thscode, start, end_ms)
+    return provider.daily_kline(thscode, start, end_ms)
+
+
 def settle(args) -> int:
     from providers import ProviderError, get_provider
-    from ash_common import date_to_ms
 
     rows = [r for r in _load_index() if r["thscode"].upper() == args.thscode.upper()]
     if not rows:
@@ -211,7 +220,7 @@ def settle(args) -> int:
         rec_dir = Path(rec["dir"])
         decision = load_json(rec_dir / "decision.json")
         end_ms = int(now_cst().timestamp() * 1000)
-        bars = provider.daily_kline(args.thscode, date_to_ms(decision["date"]) + 1, end_ms)
+        bars = _bars_since(provider, decision, args.thscode, end_ms)
         bars = [b for b in bars if b.get("date") and b["date"] > decision["date"]]
         plans_out = [_settle_plan(p, bars) for p in decision.get("plans", [])]
         payload = {"id": rec["id"], "date": decision["date"], "verdict": decision["verdict"],

@@ -104,8 +104,15 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
     last_trading_day = trading_days[-1] if trading_days else None
 
     # -- core kline -----------------------------------------------------------
+    # ETF window guard: fuyao fund market historical caps at 5 natural years
+    if asset_type == "fund-etf" and bars_wanted > 1150:
+        notes.append(f"ETF 行情窗口上限 5 个自然年，K 线根数已从 {bars_wanted} 收敛到 1150")
+        bars_wanted = 1150
+        start_ms, _ = window_ms(bars_wanted, now)
     if asset_type == "a-share-index":
         bars = provider.index_kline(thscode, start_ms, end_ms)
+    elif asset_type == "fund-etf":
+        bars = provider.fund_kline(thscode, start_ms, end_ms)   # forward-adjusted upstream
     else:
         bars = provider.daily_kline(thscode, start_ms, end_ms, adjust=adjust)
     if not bars or len(bars) < 20:
@@ -155,6 +162,8 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
     # -- quote ----------------------------------------------------------------
     if asset_type == "a-share-index":
         quote_fn = lambda: provider.index_quote([thscode])[0]  # noqa: E731
+    elif asset_type == "fund-etf":
+        quote_fn = lambda: provider.fund_quote(thscode)         # noqa: E731
     else:
         quote_fn = lambda: provider.quote([thscode])[0]        # noqa: E731
     quote = _safe(provider, "quote", quote_fn, errors, skip)

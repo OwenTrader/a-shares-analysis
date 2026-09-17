@@ -260,7 +260,9 @@ def main() -> int:
         emit({"status": "error", "error": f"snapshot not found: {src}"})
         return 4
     digest = build_digest(src)
-    out = Path(args.out) if args.out else src.parent / "digest.json"
+    # per-snapshot filename: snapshots share one cache dir, a fixed digest.json
+    # would be overwritten by every new analysis
+    out = Path(args.out) if args.out else src.parent / f"{src.stem}_digest.json"
     from ash_common import dump_json
 
     dump_json(out, digest)

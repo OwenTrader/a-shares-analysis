@@ -124,21 +124,34 @@ def fallback_searches(query: str) -> list[str]:
 def resolve(provider, query: str, asset_type: str | None) -> dict:
     query_n = normalize_query(query)
     asset_type = asset_type or DEFAULT_ASSET_TYPE
-    try:
-        results = provider.search(query_n, asset_type=asset_type, limit=20)
-    except ProviderError as exc:
-        if exc.kind == ERR_AUTH:
-            return {"status": "no_key", "error": exc.message}
-        raise
+
+    def _search(q, atype):
+        try:
+            return provider.search(q, asset_type=atype, limit=20), None
+        except ProviderError as exc:
+            if exc.kind == ERR_AUTH:
+                return None, {"status": "no_key", "error": exc.message}
+            return None, exc
+
+    results, err = _search(query_n, asset_type)
+    if err:
+        return err
     if not results:  # typo fallback: broaden with substring seeds, then fuzzy-rank
         for alt in fallback_searches(query_n):
-            try:
-                results = provider.search(alt, asset_type=asset_type, limit=20)
-            except ProviderError as exc:
-                if exc.kind == ERR_AUTH:
-                    return {"status": "no_key", "error": exc.message}
-                continue
+            results, err = _search(alt, asset_type)
+            if err:
+                return err
             if results:
+                break
+    if not results and asset_type == DEFAULT_ASSET_TYPE:
+        # user asked for a fund/ETF but forgot to pass --type: retry fund universes
+        # and surface the asset_type on candidates so the agent can let the user pick
+        for fund_type in ("fund-etf", "fund-lof", "fund-otc"):
+            results, err = _search(query_n, fund_type)
+            if err:
+                return err
+            if results:
+                asset_type = fund_type
                 break
     outcome = match(query_n, results)
     if outcome["status"] == "verified":
