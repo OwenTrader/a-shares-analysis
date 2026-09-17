@@ -26,8 +26,11 @@ trader → 3 risk reviewers → portfolio manager) → an HTML dashboard report.
 gh skill install OwenTrader/a-shares-analysis
 ```
 
-Then just tell your assistant: *"analyze the mid/long-term opportunity of
-Kweichow Moutai (600519)"*. First run walks you through the free Fuyao API key
+Zero prerequisites: no Python, no uv, no terminal — on first run the agent
+bootstraps everything itself via Windows built-in PowerShell (auto-installs
+uv + a managed CPython into the skill's `.venv`). Then just tell your
+assistant: *"analyze the mid/long-term opportunity of Kweichow Moutai
+(600519)"*. First run walks you through the free Fuyao API key
 conversationally (browser auto-opened, paste the key, done) and asks your
 capital profile once.
 
@@ -80,17 +83,19 @@ capital profile once.
 
 对你的 AI 助手说：**"用 a-shares-analysis 分析一下贵州茅台的中长线机会"** 即可。
 
-首次使用时 AI 会带你完成引导（全程对话，**你不需要打开终端**）：帮你拉起
-Key 申请页面 → 你注册并粘贴 Key 到对话 → AI 配置并真实验证 → 播报能力清单
-（个股中长线分析 / 快速看盘 / 指数板块分析 / 决策复盘）→ 你说出想分析的标的。
-AI 还会询问一次你的资金画像（总资金 / 单次仓位上限 / 单笔风险，默认 10 万/10%/2%）。
+**零前置要求：无需 Python、无需 uv、无需打开终端**——首次使用时 AI 通过 Windows
+自带的 PowerShell 自动装齐一切（自动安装 uv 与托管版 Python 到 skill 的 `.venv`，
+只需网络），然后带你完成引导（全程对话）：帮你拉起 Key 申请页面 → 你注册并粘贴
+Key 到对话 → AI 配置并真实验证 → 播报能力清单（个股中长线分析 / 快速看盘 /
+指数板块分析 / 决策复盘）→ 你说出想分析的标的。AI 还会询问一次你的资金画像
+（总资金 / 单次仓位上限 / 单笔风险，默认 10 万/10%/2%）。
 
 <details>
 <summary>进阶：手动 CLI（可选，普通用户无需使用）</summary>
 
 ```bash
 cd skills/a-shares-analysis
-uv run --no-project python scripts/setup_env.py   # 建 .venv（仅首次或修复时）
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_env.ps1  # 零依赖自举
 .venv/Scripts/python.exe scripts/ash_env.py --open-admin      # 打开 Key 申请页
 .venv/Scripts/python.exe scripts/ash_env.py --save-key <KEY>  # 保存 Key
 .venv/Scripts/python.exe scripts/ash_env.py --verify          # 验证 + 欢迎语

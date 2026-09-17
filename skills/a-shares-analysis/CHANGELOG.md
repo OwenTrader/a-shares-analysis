@@ -18,6 +18,9 @@
 - **决策闭环**：journal 归档（record/list/settle），真实日线结算历史判断
 - **提供方抽象层**：providers 协议 + fuyao 实现，`ASHARES_PROVIDER` 换源预留
 - **对话式引导**：无 Key 时自动拉起申请页、用户仅粘贴 Key、真实验证 + 欢迎语
+- **零依赖环境自举**：`setup_env.ps1` 仅用 Windows 自带 PowerShell——自动定位/安装
+  uv（winget 或官方脚本，免管理员）→ `uv venv` 拉起托管版 CPython → 装依赖（镜像
+  回退）；用户机器**无需预装 Python/uv**，全程 AI 执行、用户零命令
 - 67 项离线单测（无需网络与 Key）
 
 ### 声明

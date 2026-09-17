@@ -8,10 +8,14 @@
 用户提到某只 A 股 / 指数 / 想要个股研判
 │
 ├─ 首次使用（本会话第一次）
-│   └─ setup_env.py --check-only → 坏则 setup_env.py 修复
-│      ash_env.py --check → no_key 则进入【对话式三步引导】：
-│      ① --open-admin 拉起签发页（有截图再 --guide）
-│      ② 口述步骤，等用户把 Key 粘贴到对话 → AI 自己跑 --save-key
+│   └─ 环境自举（AI 执行，用户零命令零安装）：
+│      powershell -NoProfile -ExecutionPolicy Bypass -File "$S/setup_env.ps1" -CheckOnly
+│      ├─ ok        → 用返回的 venv_python 继续
+│      ├─ incomplete→ 去掉 -CheckOnly 重跑（自动装 uv + 托管 Python + 依赖，可能要几分钟）
+│      └─ failed    → 多为网络问题，告知用户稍后重试；禁止让用户手动装任何东西
+│      然后 ash_env.py --check → no_key 则进入【对话式三步引导】：
+│      ① --open-admin 拉起签发页 + --guide 打开截图并播报 captions 步骤
+│      ② 等用户把 Key 粘贴到对话 → AI 自己跑 --save-key
 │      ③ --verify 真实验证 → 成功则原文播报欢迎语（能力清单+示例问法），
 │         引导用户说出第一个标的；失败按 say_to_user 提示修复重验
 │
@@ -49,8 +53,8 @@
 
 ```bash
 PY="SKILL_DIR/.venv/Scripts/python.exe"; S="SKILL_DIR/scripts"
-# .venv 不存在时先自举（本机约定：uv）：
-#   uv run --no-project python "$S/setup_env.py"
+# .venv 不存在？零依赖自举（AI 执行，仅需 Windows 自带 PowerShell；自动装 uv+托管 Python）：
+#   powershell -NoProfile -ExecutionPolicy Bypass -File "$S/setup_env.ps1"
 
 # 环境 / Key（全部由 AI 执行；用户只在对话里粘贴 Key）
 "$PY" "$S/setup_env.py" --check-only
@@ -92,6 +96,9 @@ PY="SKILL_DIR/.venv/Scripts/python.exe"; S="SKILL_DIR/scripts"
 
 ## 3. 话术模板
 
+- 环境自举中（首次或修复时，用户零操作）：
+  「我正在准备分析环境（首次需要下载运行时组件，约 1-3 分钟，取决于网速）——你不用
+  安装任何东西，完成后我马上继续。」
 - 要 Key（对话式三步，**命令全由 AI 执行，不向用户展示任何终端命令**）：
   「分析需要免费的扶摇数据 Key，我带你 1 分钟搞定——我已在浏览器帮你打开申请页面
   和操作指引截图（3 步）：① 在 API Key 管理页点【去登录】完成注册/登录；
@@ -154,8 +161,10 @@ PY="SKILL_DIR/.venv/Scripts/python.exe"; S="SKILL_DIR/scripts"
 14. **无 Key 只回一句"请去申请"**——必须拉起签发页面（--open-admin）+ 给出步骤，有截图再 --guide。
 15. **「不可执行」只丢一句就完事**——sizing.shares<100 时必须复述门槛与三条出路，并主动问
     用户是否改画像；用户给了新数值要当场 profile.py --set 并重出股数/报告。
-16. **让用户敲命令 / 贴终端命令给用户**——引导与配置全程对话式：拉起浏览器、保存 Key、
-    验证、更新画像都由 AI 执行命令；用户最多粘贴一次 Key 或口述数值。终端命令只出现在
-    AI 的工具调用里，不出现在给用户看的话术里。
+16. **让用户敲命令 / 贴终端命令给用户**——引导与配置全程对话式：环境自举（含自动安装
+    uv/Python）、拉起浏览器、保存 Key、验证、更新画像都由 AI 执行命令；用户最多粘贴一次
+    Key 或口述数值。终端命令只出现在 AI 的工具调用里，不出现在给用户看的话术里。
 17. **配好 Key 后不验证、不欢迎**——save-key 后必须 --verify 真实验证，成功后原文播报
     欢迎语（能力清单 + 示例问法），把球交给用户。
+18. **环境缺失时让用户自己装 Python/uv**——自举失败的唯一原因是网络，重跑
+    setup_env.ps1 即可；任何「请先安装 XX」的话术都是违规。

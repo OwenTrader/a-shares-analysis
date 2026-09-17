@@ -34,30 +34,36 @@ homepage: https://github.com/OwenTrader/a-shares-analysis
 
 ---
 
-## 路径约定与环境自举
+## 路径约定与环境自举（用户机器可能既无 Python 也无 uv）
 
 `SKILL_DIR` 指代本 SKILL.md 所在目录（安装位置因机器而异，定位本文件即可）。
 
-**解释器解析顺序**（首个可用者胜出）：
+**自举零依赖起点（AI 执行，用户零命令零安装）**——环境任何环节缺失，第一步永远是：
 
 ```bash
-SKILL_DIR/.venv/Scripts/python.exe   # 首选：自带隔离环境（Windows 路径；POSIX 为 .venv/bin/python）
-uv run --no-project python           # 本机约定：uv（无独立 Python 的机器）
-py -3 / python / python3             # 兜底（若存在真实安装）
+powershell -NoProfile -ExecutionPolicy Bypass -File "SKILL_DIR/scripts/setup_env.ps1"          # 修复
+powershell -NoProfile -ExecutionPolicy Bypass -File "SKILL_DIR/scripts/setup_env.ps1" -CheckOnly  # 只查
 ```
 
-`.venv` 缺失或损坏（import pandas/numpy 失败）时，**优先用 uv 修复**（本机无独立 Python）：
+该脚本只用 Windows 自带的 PowerShell，自动完成：检测 `.venv` → 找 uv（PATH /
+`~/.local/bin` / winget Links）→ **没有 uv 就自动安装**（先 winget `Astral-Sh.UV`，
+失败用官方安装脚本，均免管理员）→ `uv venv --python 3.12`（**自动下载 uv 托管版
+CPython，无需系统装 Python**）→ 安装 pandas/numpy/pytest（PyPI→清华→阿里镜像回退）。
+stdout 单行 JSON（ok / incomplete / failed + `venv_python`）。
+
+**解释器解析顺序**（自举成功后，首个可用者胜出）：
 
 ```bash
-uv run --no-project python "SKILL_DIR/scripts/setup_env.py"            # uv venv + uv pip install
-uv run --no-project python "SKILL_DIR/scripts/setup_env.py" --check-only
+SKILL_DIR/.venv/Scripts/python.exe   # 自举产物，一切脚本统一用它
 ```
 
-setup_env.py 策略：有 uv → `uv venv` + `uv pip install pandas numpy pytest`；
-无 uv → 当前解释器 `venv` + pip（PyPI，失败回退清华/阿里镜像）。
-Git Bash 里给 uv 传路径必须用 `C:/...` 形式（`/c/...` 会被判为相对路径）。
-uv 也没有时：引导用户 `winget install astral-sh.uv`（或安装 Python 3.12），
-**不要**继续后续步骤。修复后统一用 `.venv` 解释器。
+- `status: ok` → 后续全部用 JSON 返回的 `venv_python`。
+- `status: failed` → 按 detail 向用户解释（多为网络问题），**不要**让用户手动装任何东西；
+  网络恢复后重跑同一命令即可，脚本可重复执行。
+- 非 Windows（macOS/Linux）：AI 改用 `curl -LsSf https://astral.sh/uv/install.sh | sh`
+  安装 uv 后执行等价命令（`uv venv SKILL_DIR/.venv --python 3.12 && uv pip install
+  --python SKILL_DIR/.venv/bin/python pandas numpy pytest`），同样无需用户动手。
+- `scripts/setup_env.py`（Python 版）保留给「已有 Python/uv」的修复场景，不是主路径。
 
 ---
 
@@ -316,7 +322,8 @@ ASHARES_PROVIDER=fuyao    # 默认；换源只需实现 DataProvider 协议并�
 | `scripts/indicators.py` | 纯 pandas 日线指标引擎（无 TA-Lib） |
 | `scripts/journal.py` | 决策归档 record / list / settle（真实日线结算） |
 | `scripts/ash_env.py` | API Key 管理：--check / --save-key / **--open-admin（拉起签发页）/ --guide（图文指引）** |
-| `scripts/setup_env.py` | venv 自举（uv 优先，pandas+numpy，镜像回退） |
+| `scripts/setup_env.ps1` | **零依赖环境自举**（仅需 Windows 自带 PowerShell；自动装 uv+托管 Python） |
+| `scripts/setup_env.py` | venv 修复（Python 版，已有 Python/uv 场景的备用路径） |
 | `scripts/providers/` | **数据提供方抽象层**（base 协议 + fuyao 实现 + 注册表） |
 | `assets/guide/` | Key 申请指引截图目录（png/jpg，由用户提供，--guide 打开） |
 | `references/agent_guide.md` | **AI 执行手册（决策树/命令速查/话术/反模式，执行前必读）** |
