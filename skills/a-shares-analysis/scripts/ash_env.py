@@ -87,8 +87,24 @@ def open_admin_page() -> bool:
         return False
 
 
+GUIDE_CAPTIONS = SKILL_DIR / "assets" / "guide" / "captions.json"
+
+
+def load_guide_captions() -> list[dict]:
+    """Step captions paired with screenshot filenames (captions.json next to images)."""
+    import json as jsonlib
+
+    if not GUIDE_CAPTIONS.is_file():
+        return []
+    try:
+        data = jsonlib.loads(GUIDE_CAPTIONS.read_text(encoding="utf-8"))
+        return data.get("steps", [])
+    except (ValueError, OSError):
+        return []
+
+
 def open_guide_images() -> list[str]:
-    """Open registration guide screenshots placed in SKILL_DIR/assets/guide/ (if any)."""
+    """Open registration guide screenshots in assets/guide/ (if any)."""
     import webbrowser
 
     guide_dir = SKILL_DIR / "assets" / "guide"
@@ -186,11 +202,20 @@ def main() -> int:
         return 0 if result["ok"] else 4
     if args.guide:
         opened = open_guide_images()
+        captions = load_guide_captions()
+        steps_text = "\n".join(
+            f"  第{i}步（{c['image']}）：{c['caption']}"
+            for i, c in enumerate(captions, 1))
+        if not steps_text:
+            steps_text = "\n".join(f"  第{i}步：{s}" for i, s in enumerate(KEY_GUIDE["steps"], 1))
         emit({
             "status": "opened" if opened else "no_images",
             "opened": opened,
             "guide_dir": str(SKILL_DIR / "assets" / "guide"),
-            "say_to_user": ("✓ 已打开注册指引截图" if opened else
+            "captions": captions,
+            "say_to_user": ("✓ 已在浏览器打开注册指引截图，按下面 3 步操作：\n" + steps_text +
+                            "\n完成后把 sk-fuyao- 开头的 Key 粘贴发给我即可"
+                            if opened else
                             "assets/guide/ 下暂无指引截图；请将注册/签发页面的 png 放入该目录后重试"),
         })
         return 0

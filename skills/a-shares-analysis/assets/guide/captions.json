@@ -1,0 +1,17 @@
+{
+  "title": "扶摇 API Key 申请指引（3 步）",
+  "steps": [
+    {
+      "image": "01-APIKey管理页-先去登录.png",
+      "caption": "打开 API Key 管理页：若提示「未检测到登录态」，点右侧红色【去登录】按钮完成注册/登录；已登录则直接进行第 2 步"
+    },
+    {
+      "image": "02-填别名-签发APIKey.png",
+      "caption": "登录后点右上角【创建 API Key】，在弹窗中填一个别名（随便起，如 dev、zcode），然后点红色【签发 API Key】"
+    },
+    {
+      "image": "03-点复制-把Key发给AI.png",
+      "caption": "签发成功后页面显示 sk-fuyao- 开头的 Key：点右侧【复制】按钮，回到对话把 Key 粘贴发给 AI（AI 会立即验证并配置）"
+    }
+  ]
+}

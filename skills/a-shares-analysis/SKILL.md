@@ -72,13 +72,13 @@ uv 也没有时：引导用户 `winget install astral-sh.uv`（或安装 Python 
 
 - `status: ready` → 继续（首次使用可顺手 `--verify` 确认并播报欢迎语）。
 - `status: no_key` → 按以下**对话式三步**引导（命令全部由 AI 在后台跑）：
-  1. **拉起页面**：AI 运行 `ash_env.py --open-admin` 直接在浏览器打开
-     https://fuyao.aicubes.cn/admin/ （失败才给网址让用户手动访问）；
-     有截图时再运行 `--guide` 打开 `assets/guide/` 指引图。
-  2. **口述步骤 + 等待粘贴**：「请在打开的页面 ① 注册/登录 ② 进入『API Key 管理』
-     ③ 点击签发/创建 ④ 把生成的 Key 直接粘贴到对话里发给我」——**AI 拿到 Key 后
-     自己运行 `--save-key <KEY>`**（存于 `SKILL_DIR/.cache/`，永不入版本库），
-     不要求用户敲命令或设置环境变量。
+  1. **拉起页面 + 图文指引**：AI 运行 `ash_env.py --open-admin` 直接在浏览器打开
+     https://fuyao.aicubes.cn/admin/ （失败才给网址让用户手动访问）；再运行
+     `--guide` 打开 `assets/guide/` 的 3 张流程截图并播报 captions 步骤：
+     ① 管理页未登录 → 点【去登录】完成注册/登录；② 【创建 API Key】→ 填别名 →
+     【签发 API Key】；③ 点【复制】，把 sk-fuyao- 开头的 Key 粘贴给 AI。
+  2. **等待粘贴**：**AI 拿到 Key 后自己运行 `--save-key <KEY>`**（存于
+     `SKILL_DIR/.cache/`，永不入版本库），不要求用户敲命令或设置环境变量。
   3. **真实验证 + 欢迎语**：AI 运行 `ash_env.py --verify`（真实调一次标的检索）——
      - 成功：**把返回的 `say_to_user` 欢迎语原文播报给用户**（内容为"我能做 ①个股
        中长线分析 ②快速看盘 ③指数/板块分析 ④决策复盘 + 示例问法 + 请直接说股票

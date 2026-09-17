@@ -1,15 +1,17 @@
 # Key 申请图文指引目录
 
-把扶摇 API Key 的**注册 / 登录 / 签发页面截图**（png 或 jpg，按步骤命名，如
-`01-登录页.png`、`02-APIKey管理.png`、`03-签发.png`）放入本目录。
+本目录存放扶摇 API Key 的**注册/签发流程截图**，由 AI 在用户缺 Key 时通过
+`ash_env.py --guide` 自动依次打开（浏览器图片查看），或作为给用户的说明材料。
 
-之后 AI 助手在用户缺少 Key 时会运行：
+## 当前内容
 
-```bash
-python scripts/ash_env.py --guide     # 依次打开本目录下的截图
-python scripts/ash_env.py --open-admin  # 直接拉起 https://fuyao.aicubes.cn/admin/
-```
+| 文件 | 步骤 |
+|------|------|
+| `01-APIKey管理页-先去登录.png` | 打开管理页，未登录时点【去登录】 |
+| `02-填别名-签发APIKey.png` | 【创建 API Key】→ 填别名 → 【签发 API Key】 |
+| `03-点复制-把Key发给AI.png` | 点【复制】，把 sk-fuyao- 开头的 Key 粘贴给 AI |
 
-无截图时 `--guide` 会提示目录为空，不影响流程（`--open-admin` 拉起官网 + 文字步骤引导）。
+步骤说明集中在 `captions.json`（image / caption 对）——截图更新后只需改这个文件，
+`ash_env.py --guide` 会同时打开图片并输出对应说明。
 
-> 截图不要包含任何真实 API Key 内容（截图仅用于指引页面布局）。
+> 截图不要包含任何真实 API Key 内容（示例图中的 Key 已打码）。
