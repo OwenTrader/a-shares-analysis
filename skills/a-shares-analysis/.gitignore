@@ -1,0 +1,8 @@
+# runtime artifacts — never commit (snapshots contain API data; keys are plaintext)
+.cache/
+data/
+reports/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
