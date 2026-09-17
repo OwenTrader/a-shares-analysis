@@ -5,5 +5,15 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# runtime artifacts — any location (snapshots/API data, keys, decision journal,
+# generated reports must never reach a repo)
+.cache/
+data/
+reports/
+
 # analysis workspaces (root-level only; the skill itself lives in skills/)
 /a-shares-analysis/
+
+# OS noise
+Thumbs.db
+.DS_Store

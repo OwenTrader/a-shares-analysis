@@ -1,49 +1,15 @@
-# A-Shares Analysis — AI-Powered A-Share Mid/Long-Term Analysis Skill
-
-> 🙏 **Acknowledgement / 致谢**：Powered by the [Fuyao API (同花顺金融数据)](https://fuyao.aicubes.cn/) —
-> free A-share market & fundamentals data. Special thanks to 同花顺 for opening this data service.
-> 本技能的数据能力基于[扶摇 API](https://fuyao.aicubes.cn/)（同花顺金融数据，免费），特此致谢。
-
-**[🇨🇳 中文文档（完整版）](README.zh-CN.md) | [🇬🇧 English (below)](#english)**
-
-<a id="english"></a>
-## English
-
-An [Agent Skill](https://agentskills.io) for AI assistants (ZCode / Claude Code / ...):
-deep research on any A-share stock with a **multi-agent team pipeline** —
-error-corrected ticker resolution → data grounding → 11-agent deliberation
-(technical / fundamental / sentiment / macro analysts → bull-vs-bear debate →
-trader → 3 risk reviewers → portfolio manager) → an HTML dashboard report.
-
-- **Medium/long-term oriented**: free data tier serves daily bars only, so the
-  methodology covers trend, fundamentals and valuation — not intraday trading.
-- **Mandatory ticker gate**: fuzzy name/code resolution with delisting & ST warnings.
-- **Position sizing from your profile**: capital / per-trade cap / risk budget,
-  whole-lot (100-share) arithmetic; honest "not executable" verdicts with thresholds.
-- **Closed loop**: every decision is archived and later settled against real bars.
-
-```bash
-gh skill install OwenTrader/a-shares-analysis
-```
-
-Then just tell your assistant: *"analyze the mid/long-term opportunity of
-Kweichow Moutai (600519)"*. First run walks you through the free Fuyao API key
-conversationally (browser auto-opened, paste the key, done) and asks your
-capital profile once.
-
-> 100% free & open source (Apache-2.0). Developer WeChat: **tradinginfinity**.
-> AI-generated output — research/education only, NOT investment advice.
-
----
-
-# A-Shares Analysis — A 股多智能体中长线分析 Skill（中文完整版）
+# A-Shares Analysis — A 股多智能体中长线分析 Skill
 
 > 🙏 **致谢**：数据能力基于[扶摇 API（同花顺金融数据）](https://fuyao.aicubes.cn/)——
 > 免费的 A 股行情与财务数据服务，感谢同花顺开放接入。
-> **[🇬🇧 English summary at top](#english) | [🇨🇳 中文文档（本节）](#中文)**
+> **[🇬🇧 English README](README.md) | [🇨🇳 中文（本页，完整版）](#readme)**
 
 面向 AI Agent（ZCode / Claude Code 等）的 A 股个股深度研判技能：**先纠错、再接地、
-后团队研判**，专为中长线（周线级别以上）设计。
+后团队研判**，专为中长线（周线级别以上）设计。v0.1.0 ｜ 完全免费开源（Apache-2.0）
+｜ 开发者微信 tradinginfinity ｜ 仓库 https://github.com/OwenTrader/a-shares-analysis
+
+> 本页为中文完整版；根目录 [README.md](README.md) 顶部含同一份内容的英文摘要，
+> 两份文档互相引用。本文件由仓库根 README 同步维护（内容一致）。
 
 ## 它做什么
 
@@ -99,20 +65,6 @@ uv run --no-project python scripts/setup_env.py   # 建 .venv（仅首次或修�
 
 </details>
 
-## 目录
-
-```
-skills/a-shares-analysis/
-├── SKILL.md                # Agent 入口（流程编排与硬性纪律）
-├── references/             # agent_guide / agent_team / fuyao_api / providers / indicators
-├── scripts/                # resolve_ticker / fetch_snapshot / make_digest / journal ...
-│   └── providers/          # 数据提供方抽象层（fuyao 默认，可扩展 tushare 等）
-├── assets/guide/           # Key 申请图文指引（3 张截图 + captions）
-├── tests/                  # 离线单测（API 打桩，无需网络与 Key）
-├── .cache/                 # 快照与 Key 缓存（可再生，不入库）
-└── data/                   # 决策日志（append-only，不入库）
-```
-
 ## 数据源与扩展
 
 默认数据源为[扶摇（同花顺金融数据）API](https://fuyao.aicubes.cn/docs/api-reference/overview/)。
@@ -122,11 +74,7 @@ skills/a-shares-analysis/
 
 ## 免责声明与开源声明
 
-本项目**完全免费开源**（Apache-2.0，见 [LICENSE](LICENSE)），仓库地址
+本项目**完全免费开源**（Apache-2.0，见仓库 LICENSE），仓库地址
 https://github.com/OwenTrader/a-shares-analysis ，开发者微信 tradinginfinity。
 输出由 AI 流水线自动生成，仅供研究与教育目的，不构成任何投资建议。股市有风险，
 投资需谨慎；所有决策与后果由投资者本人承担。
-
-## License
-
-Apache-2.0 © OwenTrader
