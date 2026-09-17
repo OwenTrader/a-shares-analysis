@@ -45,11 +45,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "SKILL_DIR/scripts/setup_env
 powershell -NoProfile -ExecutionPolicy Bypass -File "SKILL_DIR/scripts/setup_env.ps1" -CheckOnly  # 只查
 ```
 
-该脚本只用 Windows 自带的 PowerShell，自动完成：检测 `.venv` → 找 uv（PATH /
-`~/.local/bin` / winget Links）→ **没有 uv 就自动安装**（先 winget `Astral-Sh.UV`，
-失败用官方安装脚本，均免管理员）→ `uv venv --python 3.12`（**自动下载 uv 托管版
-CPython，无需系统装 Python**）→ 安装 pandas/numpy/pytest（PyPI→清华→阿里镜像回退）。
-stdout 单行 JSON（ok / incomplete / failed + `venv_python`）。
+该脚本只用 Windows 自带的 PowerShell，按**最可能的顺序**自动解析环境：
+① 检测 `.venv`；② **系统 Python 优先**（`py -3` / `python` / `python3`，要求 ≥3.9，
+微软商店占位符会被甄别剔除）→ 用它跑 `setup_env.py`（venv+pip，镜像回退）；
+③ 有 uv 就用 uv（`~/.local/bin` / winget Links 也会找）；④ **两者都没有才自动安装
+uv**（先 winget `Astral-Sh.UV`，失败用官方脚本，均免管理员）→ `uv venv --python 3.12`
+（uv 自动下载托管版 CPython）→ 安装 pandas/numpy/pytest。
+stdout 单行 JSON（ok / incomplete / failed + `venv_python` + `route`）。
 
 **解释器解析顺序**（自举成功后，首个可用者胜出）：
 

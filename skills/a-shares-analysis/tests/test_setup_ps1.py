@@ -34,8 +34,30 @@ def test_ps1_check_only_emits_json():
 
 
 def test_ps1_contains_zero_dependency_chain():
-    """The script must never require pre-installed Python: it must be able to
-    install uv itself and let uv fetch a managed CPython."""
+    """The script must never require pre-installed anything: it can install uv
+    itself and let uv fetch a managed CPython (last-resort route)."""
     s = PS1.read_text(encoding="utf-8")
     for needle in ("winget", "astral.sh/uv/install.ps1", "uv venv", "--python 3.12"):
         assert needle in s, needle
+
+
+def test_ps1_prefers_system_python_over_uv():
+    """Typical machines already have Python — detection must come BEFORE the
+    uv fallback, and the Microsoft Store stub must be rejected."""
+    s = PS1.read_text(encoding="utf-8")
+    assert "Find-SystemPython" in s
+    py_block = s.index("Find-SystemPython")
+    uv_install = s.index("installing uv via winget")
+    assert py_block < uv_install, "system-python detection must precede uv install"
+    assert "py -3" in s or "'-3'" in s          # windows launcher tried first
+    assert s.index("system python route failed") < uv_install
+
+
+def test_setup_env_py_tries_stdlib_before_uv():
+    """Same preference inside the python-side bootstrap (compare CALL sites,
+    not function definitions)."""
+    s = (PS1.parent / "setup_env.py").read_text(encoding="utf-8")
+    stdlib_call = s.index("code, detail = build_with_stdlib()")
+    uv_call = s.index("code, detail = build_with_uv()")
+    assert stdlib_call < uv_call, "stdlib venv must be attempted before uv"
+    assert "system python first" in s

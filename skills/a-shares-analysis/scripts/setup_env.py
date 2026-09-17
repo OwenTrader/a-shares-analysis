@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 """Environment bootstrap: build SKILL_DIR/.venv with pandas+numpy(+pytest).
 
-本机约定：**优先使用 uv**（机器上通常没有独立 Python，`python` 只是 Store 存根）。
+策略（最可能优先）：**系统 Python 优先**（多数机器已有）——当前解释器 `venv`+pip；
+失败才回退 uv（uv venv + uv pip）。零依赖入口是同目录的 setup_env.ps1（Windows
+自带 PowerShell，无 Python/uv 也可跑，负责发现解释器并调用本脚本或 uv）。
 
-  引导（首次，用 uv 跑本脚本）：
-    uv run --no-project python scripts/setup_env.py
+  引导（无 Python/uv 的机器，AI 执行）：
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup_env.ps1
   之后所有脚本统一用：
     SKILL_DIR/.venv/Scripts/python.exe  (Windows)  或 .venv/bin/python (POSIX)
-
-策略：
-  1. 若 .venv 已可用（import pandas/numpy 成功）→ 直接返回
-  2. 有 uv → uv venv + uv pip install（最快，且能拉起 uv 管理的 Python）
-  3. 无 uv → 用当前解释器 venv + pip（PyPI，失败回退清华/阿里镜像）
 
   --check-only  只报告状态不修改
 """
@@ -103,7 +100,14 @@ def main() -> int:
                        "uv run --no-project python scripts/setup_env.py"))
     if venv_ok():
         return report(0, "ok", "venv ready")
-    code, detail = build_with_uv() if have_uv() else build_with_stdlib()
+    # system python first (most machines already have one); uv is the fallback
+    code, detail = build_with_stdlib()
+    if code == 0:
+        return report(code, "ok", detail)
+    print(f"[setup_env] stdlib venv/pip failed: {detail}")
+    if have_uv():
+        print("[setup_env] retrying with uv...")
+        code, detail = build_with_uv()
     return report(code, "ok" if code == 0 else "failed", detail)
 
 
