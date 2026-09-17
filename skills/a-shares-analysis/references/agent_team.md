@@ -9,10 +9,10 @@ A 股化：**数据接地 → 四分析师并行 → 多空辩论 → 交易员�
 > fast 模式见 SKILL.md 第 4A 节。子 agent 用 `Agent` 工具（`subagent_type: general-purpose`）
 > 派发，无需任何 LLM API Key。
 
-## 0. 工作目录约定
+## 0. 工作目录约定（归档规则——所有工件只落在 SKILL_DIR 内，绝不写当前目录）
 
 ```
-<workspace>/a-shares-analysis/<thscode>_<YYYYmmdd_HHMM>/
+SKILL_DIR/data/archives/<THSCODE>_<YYYYmmdd_HHMM>/     # THSCODE 保留点号，如 600519.SH
 ├── digest.json                 # 唯一阅读入口（make_digest.py 产出）
 ├── reports/
 │   ├── 01_technical.md         # 技术分析师
@@ -26,8 +26,17 @@ A 股化：**数据接地 → 四分析师并行 → 多空辩论 → 交易员�
 │   ├── 09_risk_conservative.md # 风控-保守
 │   ├── 10_risk_neutral.md      # 风控-中性
 │   └── 11_portfolio_decision.md# 组合经理
-└── FINAL_REPORT.md             # 交付用户（含 ## 投资决策 段）
+├── FINAL_REPORT.md             # 交付用户（含 ## 投资决策 段）
+├── decision.json               # 归档输入
+└── team.json                   # 11 智能体观点（≤40字/条）
+
+HTML 交付（唯一用户可见形态）：SKILL_DIR/reports/<ticker>_<名称>_<时间戳>.html
+                              + 自动维护的 reports/index.html 索引
 ```
+
+派发子 agent 时 prompt 中的输出路径一律用上述**绝对路径**。data/、reports/ 已
+gitignore；若发现历史运行在别处散落了工件目录（如 `<cwd>/a-shares-analysis/`），
+迁入 `data/archives/` 并删除原目录。
 
 ## 1. Stage 0 — 数据官（主 agent 亲自，不派发）
 

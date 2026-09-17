@@ -194,7 +194,8 @@ digest 与快照同目录，含：technical（趋势/动量/波动/结构精选�
    - **风险**：ATR%、20/60 日已实现波动、最大回撤、量能状态
 3. 直接给出结论（评级 / 建仓区间 / 止损 / TP1-TP3 / RRR / 失效条件 / 持有周期），
    仓位按第五步公式（资金未提供则给区间与公式）。
-4. 在回复中直接输出结论；另存 `<工作目录>/FAST_REPORT.md`（轻量，不必套完整模板）。
+4. 在回复中直接输出结论；另存 `<分析工件目录>/FAST_REPORT.md`（目录见下方归档规则，
+   轻量，不必套完整模板）。
    fast 模式不含宏观/新闻/行业检索——涉及重大事件窗口时提示「建议用标准模式复核」。
 
 ### 4B. 标准模式（standard / deep）——11 个子 agent 完整流水线
@@ -211,7 +212,17 @@ digest 精简摘要 + 角色任务 + 输出文件绝对路径；Stage 1 四个�
 
 ## 第五步：交付要求
 
-- 报告写入 `<工作目录>/FINAL_REPORT.md`（工作目录：`<workspace>/a-shares-analysis/<thscode>_<YYYYmmdd_HHMM>/`）。
+- 报告写入 `<分析工件目录>/FINAL_REPORT.md`。**归档规则（硬性，防止在用户目录散落文件）**：
+
+| 产物 | 固定位置（一律在 SKILL_DIR 内，绝不写当前工作目录） |
+|------|------|
+| 分析工件目录 | `SKILL_DIR/data/archives/<THSCODE>_<YYYYmmdd_HHMM>/`（digest.json、reports/01-11*.md、FINAL_REPORT.md、decision.json、team.json） |
+| HTML 交付库 | `SKILL_DIR/reports/<ticker>_<名称>_<YYYYmmdd_HHMMSS>.html` + 自动维护的 `index.html` 索引 |
+| 决策日志 | `SKILL_DIR/data/journal/`（append-only，journal.py 管理） |
+
+  THSCODE 保留点号（如 `600519.SH`）。`data/`、`reports/` 均已 gitignore。
+  历史清理：若发现运行目录残留 `a-shares-analysis/` 等散落工件，迁入
+  `data/archives/` 后删除原目录并告知用户。
 - **报告开头必须放 AI 理财建议风险横幅**（Markdown 报告与 HTML 报告皆然，措辞如下）：
 
   > ⚠️ **AI 生成内容风险提示**：本报告由多智能体 AI 流水线自动生成，属于研究演示，
