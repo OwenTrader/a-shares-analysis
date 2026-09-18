@@ -26,6 +26,10 @@ trader → 3 risk reviewers → portfolio manager) → an HTML dashboard report.
 gh skill install OwenTrader/a-shares-analysis
 ```
 
+**Agent 安装后**：仓库根的 [AGENTS.md](AGENTS.md) 是给 AI 助手看的入口指南
+（首次自举顺序 / 命令速查 / 硬性纪律）；技能主指令在
+[`skills/a-shares-analysis/SKILL.md`](skills/a-shares-analysis/SKILL.md)。
+
 Zero prerequisites: no Python, no uv, no terminal — on first run the agent
 bootstraps everything itself via Windows built-in PowerShell (auto-installs
 uv + a managed CPython into the skill's `.venv`). Then just tell your
