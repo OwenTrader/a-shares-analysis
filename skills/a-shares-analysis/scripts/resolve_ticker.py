@@ -44,7 +44,9 @@ def normalize_query(q: str) -> str:
 
 
 def _score(query: str, cand: dict) -> float:
-    thscode, ticker, name = (cand.get("thscode") or ""), (cand.get("ticker") or ""), (cand.get("name") or "")
+    thscode = (cand.get("thscode") or "").upper()
+    ticker = (cand.get("ticker") or "").upper()
+    name = (cand.get("name") or "").upper()   # case-insensitive (TESLA vs Tesla, Inc.)
     if query == thscode:
         return 100.0
     if query == ticker:
