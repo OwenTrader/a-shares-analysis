@@ -239,3 +239,22 @@ def test_chart_payload_has_ma_and_plan(tmp_path):
     assert sum(v is not None for v in payload["ma250"]) > 0
     assert payload["plan"]["stop"] == 9.6
     assert payload["monthly"]
+
+
+def test_market_aware_template_for_us_digest():
+    from generate_html import bench_label, kpi_card_all, market_card
+
+    assert bench_label("^GSPC") == "标普500" and bench_label("000300.SH") == "沪深300"
+    us = {"identity": {"asset_type": "us-stock"},
+          "quote": {"last": 337.0, "chg_pct": 0.5, "currency": "USD"},
+          "technical": {"last_close": 332.4, "moving_averages": {"ma_250": 280.5},
+                        "range_250d": {"drawdown_from_high_pct": -2.2, "position_pct": 92.8},
+                        "atr": {"atr_pct": 2.21},
+                        "volatility": {"realized_vol_20d_ann_pct": 23.5}},
+          "fundamentals": {"valuation": {"pe_fy": 43.9, "market_cap": 4.9e12}}}
+    kpi = kpi_card_all(us)
+    assert "PE (FY)" in kpi and "43.90" in kpi
+    assert "现价 USD" in kpi and "4.90万亿" in kpi
+    card = market_card({"benchmark": {"thscode": "^GSPC", "trend": {"ret_60d_pct": 3.7,
+                          "ma_stack": "mixed"}}, "sentiment": {}})
+    assert "标普500 60日" in card and "沪深300" not in card

@@ -92,6 +92,21 @@ def zone_bar(label: str, value: float | None, vmax: float, zones: list[dict],
 </div>"""
 
 
+BENCH_LABELS = {"000300.SH": "沪深300", "^GSPC": "标普500", "^HSI": "恒生指数",
+                "^IXIC": "纳斯达克", "399001.SZ": "深证成指"}
+
+
+def bench_label(code) -> str:
+    return BENCH_LABELS.get(code or "", code or "--")
+
+
+def quote_currency(digest: dict) -> str:
+    cur = (digest.get("quote") or {}).get("currency")
+    if not cur or cur == "CNY":
+        return ""
+    return f" {cur}"
+
+
 def kpi_card_all(digest: dict) -> str:
     """All key metrics in ONE card (internal grid) — avoids six tiny cards."""
     t = digest.get("technical") or {}
@@ -106,10 +121,23 @@ def kpi_card_all(digest: dict) -> str:
         except (TypeError, ValueError):
             return ""
 
+    val = f.get("valuation") or {}
+    pe_val, pe_label = (val.get("pe_ttm"), "PE (TTM)")
+    if pe_val is None and val.get("pe_fy") is not None:
+        pe_val, pe_label = val["pe_fy"], "PE (FY)"
+    div_yield = (f.get("dividends") or {}).get("yield_ttm_pct")
+    mcap = val.get("market_cap")
+    if div_yield is not None:
+        third = ("股息率 TTM", fnum(div_yield, 2, "%"), "", "")
+    elif mcap is not None:
+        third = ("市值", f"{mcap / 1e12:.2f}万亿" + quote_currency(digest), "", "")
+    else:
+        third = ("20日波动(年化)", fnum((t.get('volatility') or {}).get('realized_vol_20d_ann_pct'), 1, "%"), "", "")
     items = [
-        ("现价", fnum(t.get("last_close")), f"当日 {fnum(quote.get('chg_pct'))}%", updown(quote.get("chg_pct"))),
-        ("PE (TTM)", fnum((f.get("valuation") or {}).get("pe_ttm")), "", ""),
-        ("股息率 TTM", fnum((f.get("dividends") or {}).get("yield_ttm_pct"), 2, "%"), "", ""),
+        ("现价" + quote_currency(digest), fnum(t.get("last_close")),
+         f"当日 {fnum(quote.get('chg_pct'))}%", updown(quote.get("chg_pct"))),
+        (pe_label, fnum(pe_val), "", ""),
+        third,
         ("距年线",
          fnum((t.get("last_close") / ma["ma_250"] - 1) * 100 if (t.get("last_close") and ma.get("ma_250")) else None, 1, "%"),
          f"MA250 {fnum(ma.get('ma_250'), 0)}", ""),
@@ -161,6 +189,10 @@ def decision_hero(decision: dict | None, sizing: dict, digest: dict,
     if not decision:
         return ('<div class="card hero"><div class="card-title">最终决策</div>'
                 '<p class="muted">未提供 decision.json（fast 模式或未归档）。</p></div>')
+    at = (digest.get("identity") or {}).get("asset_type") or ""
+    no_short_chip = ("A 股无做空" if at.startswith("a-share") or at == "fund-etf"
+                     else ("美股可做空但本流程仅多头视角" if at == "us-stock"
+                           else "港股可做空但本流程仅多头视角" if at == "hk-stock" else "无做空"))
     verdict = decision.get("verdict", "--")
     if verdict == "WAIT":
         plan = (decision.get("plans") or [{}])[0]
@@ -202,7 +234,7 @@ def decision_hero(decision: dict | None, sizing: dict, digest: dict,
     <span class="verdict {cls}">{esc(verdict)}</span>
     <span class="chip">RRR {fnum(plan.get("rrr_tp1"), 2)}</span>
     <span class="chip">持有 {esc(horizon)}</span>
-    <span class="chip" style="color:{color}">做多视角 · A股无做空</span>
+    <span class="chip" style="color:{color}">做多视角 · {no_short_chip}</span>
   </div>
   <div class="hero-grid">{grid}</div>
   {sizing_html}
@@ -254,7 +286,8 @@ def market_card(digest: dict) -> str:
     t = digest.get("technical") or {}
     bench, senti = digest.get("benchmark") or {}, digest.get("sentiment") or {}
     rs60 = ((bench.get("relative_strength") or {}).get("rs_60d") or {}).get("ratio_slope_ann_pct")
-    rows = [("沪深300 60日", fnum((bench.get("trend") or {}).get("ret_60d_pct"), 1, "%")
+    rows = [(bench_label(bench.get("thscode")) + " 60日",
+             fnum((bench.get("trend") or {}).get("ret_60d_pct"), 1, "%")
              + f'（{esc((bench.get("trend") or {}).get("ma_stack") or "--")}）'),
             ("120日超额收益", fnum((bench.get("relative_strength") or {}).get("excess_return_120d_pct"), 1, "%")),
             ("60日RS斜率(年化)", fnum(rs60, 1)),
