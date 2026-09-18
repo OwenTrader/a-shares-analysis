@@ -34,6 +34,16 @@ assistant: *"analyze the mid/long-term opportunity of Kweichow Moutai
 conversationally (browser auto-opened, paste the key, done) and asks your
 capital profile once.
 
+**See real output first** — three live dashboard reports shipped in [`examples/`](examples/README.md):
+
+| | |
+|---|---|
+| ![Moutai dashboard](examples/screenshot-moutai.png) | ![Tesla dashboard](examples/screenshot-tesla.png) |
+| ![Apple dashboard](examples/screenshot-apple.png) | |
+
+（茅台 BUY 分批门控 / 特斯拉 WAIT 事件门控 / 苹果 WAIT——均含 AI 风险横幅、
+首屏决策卡 + 11 观点、双列瀑布流。）
+
 **Multi-market out of the box** — ask naturally, no flags needed:
 
 - A-shares & ETF & indices: “分析贵州茅台的中长线机会” / “酒ETF 怎么样” /
@@ -96,6 +106,16 @@ capital profile once.
 Key 到对话 → AI 配置并真实验证 → 播报能力清单（个股中长线分析 / 快速看盘 /
 指数板块分析 / 决策复盘）→ 你说出想分析的标的。AI 还会询问一次你的资金画像
 （总资金 / 单次仓位上限 / 单笔风险，默认 10 万/10%/2%）。
+
+**先看真实输出** —— [`examples/`](examples/README.md) 内置三份线上生成的仪表盘报告：
+
+| | |
+|---|---|
+| ![茅台仪表盘](examples/screenshot-moutai.png) | ![特斯拉仪表盘](examples/screenshot-tesla.png) |
+| ![苹果仪表盘](examples/screenshot-apple.png) | |
+
+（茅台 BUY 分批门控 / 特斯拉 WAIT 事件门控 / 苹果 WAIT——均含 AI 风险横幅、
+首屏决策卡 + 11 观点、双列瀑布流；另有 Markdown 归档版示例。）
 
 **多市场开箱即用**（自然语言即可，无需任何参数）：
 
