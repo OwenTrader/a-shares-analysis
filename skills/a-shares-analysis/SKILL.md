@@ -1,6 +1,6 @@
 ---
 name: a-shares-analysis
-version: 0.2.0
+version: 0.3.0
 description: 基于扶摇（同花顺）金融数据 API 的 A 股/场内基金（ETF）多智能体中长线分析。先强制纠错用户给出的标的名称/代码（模糊检索、同名消歧、退市/ST 检测、股票与基金自动区分），确认后拉取日线+财务+估值+热榜（股票）或前复权行情+基准（ETF）数据快照，再以团队模式产出研判：快速模式主 agent 直出，标准模式 11 个子 agent 流水线（技术/基本面/资金情绪/宏观行业 → 多空辩论 → 交易员 → 风控 → 组合经理）。数据源仅提供日线，因此核心定位中长线（趋势+基本面/持仓+估值）。当用户要求分析某只 A 股或 ETF、看看某某股票/基金、研判中长线机会时使用。仅输出研究结论，不构成投资建议，不代客下单。
 license: Apache-2.0
 homepage: https://github.com/OwenTrader/a-shares-analysis
@@ -70,6 +70,10 @@ SKILL_DIR/.venv/Scripts/python.exe   # 自举产物，一切脚本统一用它
 ---
 
 ## 第零步：API Key 检查与对话式引导
+
+**零 Key 市场先判**：用户要分析的若是**美股 / 港股**（纠错后 asset_type 为
+`us-stock` / `hk-stock`），整个链路走 **Yahoo（行情）+ SEC EDGAR（美股基本面）
+双无 Key 通道**，跳过本步直接进入分析——只有 A 股/基金/指数才需要下述扶摇 Key 引导。
 
 ```bash
 "$PY" "$SKILL_DIR/scripts/ash_env.py" --check     # 由 AI 执行，用户无需敲任何命令
@@ -154,7 +158,7 @@ vs 上证指数）、退市股、想分析指数却说成股票。
   --thscode 600519.SH --bars 600 --benchmark 000300.SH
 ```
 
-支持三种标的：`a-share`（股票，全数据段）、`a-share-index`（指数，仅行情+基准）、
+支持五种标的：`a-share`（全数据段）、`a-share-index`（行情+基准）、`fund-etf`（前复权行情+基准）、`us-stock`（Yahoo 前复权日线+SEC 基本面+本地 FY 估值，基准 ^GSPC，USD，lot=1股，零Key）、`hk-stock`（Yahoo 行情，基准 ^HSI，HKD，board lot 需人工确认，零Key）、
 `fund-etf`（场内 ETF：前复权日线+快照+基准；估值/财务/热榜自动降级——基本面角色按
 ETF 降级策略处理，见 agent_team.md；K 线窗口限 5 个自然年，超限自动收敛）。
 脚本自动完成：身份复核 → 交易日历（新鲜度基准）→ 日线（前复权）+ 指标全集 →

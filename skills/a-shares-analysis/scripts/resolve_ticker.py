@@ -143,6 +143,7 @@ def resolve(provider, query: str, asset_type: str | None) -> dict:
                 return err
             if results:
                 break
+    final_type = asset_type
     if not results and asset_type == DEFAULT_ASSET_TYPE:
         # user asked for a fund/ETF but forgot to pass --type: retry fund universes
         # and surface the asset_type on candidates so the agent can let the user pick
@@ -151,8 +152,27 @@ def resolve(provider, query: str, asset_type: str | None) -> dict:
             if err:
                 return err
             if results:
-                asset_type = fund_type
+                final_type = fund_type
                 break
+    if not results and asset_type == DEFAULT_ASSET_TYPE:
+        # user asked for a US/HK stock without --type: the yahoo route is
+        # KEYLESS, so this cross-market fallback needs no fuyao key at all
+        try:
+            import providers
+
+            yahoo = providers.get_provider("yahoo")
+            for yq in (query_n, query_n[:2]):
+                try:
+                    hits = yahoo.search(yq, limit=10)
+                except ProviderError:
+                    hits = []
+                us_hk = [h for h in hits if h.get("asset_type") in ("us-stock", "hk-stock")]
+                if us_hk:
+                    results = us_hk
+                    final_type = us_hk[0]["asset_type"]
+                    break
+        except ProviderError:
+            pass
     outcome = match(query_n, results)
     if outcome["status"] == "verified":
         target = outcome["target"]
@@ -160,7 +180,7 @@ def resolve(provider, query: str, asset_type: str | None) -> dict:
     else:
         outcome.setdefault("warnings", [])
     outcome["query"] = query_n
-    outcome["asset_type"] = asset_type
+    outcome["asset_type"] = final_type
     return outcome
 
 
@@ -203,7 +223,10 @@ def main() -> int:
         return EXIT_NEEDS_INPUT
 
     try:
-        provider = get_provider()
+        if args.asset_type in ("us-stock", "hk-stock"):
+            provider = get_provider("yahoo")   # keyless route
+        else:
+            provider = get_provider()
         outcome = resolve(provider, query, args.asset_type)
     except ProviderError as exc:
         if exc.kind == ERR_AUTH:

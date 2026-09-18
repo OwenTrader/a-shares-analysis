@@ -270,12 +270,16 @@ def _month_streak(t: dict) -> str:
     return " · ".join(f'{m["month"][2:]} {m["pct"]:+.1f}%' for m in months) or "--"
 
 
+VAL_LABELS = [("pe_ttm", "PE TTM"), ("pe_mrq", "PE MRQ"), ("pe_fy", "PE(FY)"),
+              ("pb_mrq", "PB"), ("ps_ttm", "PS"), ("ps_fy", "PS(FY)"),
+              ("pcf_ttm", "PCF"), ("market_cap", "市值"), ("shares_outstanding", "股本")]
+
+
 def fundamentals_card(digest: dict) -> str:
     f = digest.get("fundamentals") or {}
     val = f.get("valuation") or {}
-    chips_val = "".join(f'<span class="chip">{l} <b>{fnum(val.get(k))}</b></span>'
-                        for l, k in (("PE TTM", "pe_ttm"), ("PE MRQ", "pe_mrq"), ("PB", "pb_mrq"),
-                                     ("PS", "ps_ttm"), ("PCF", "pcf_ttm")))
+    chips_val = "".join(f'<span class="chip">{label} <b>{fnum(val.get(key), 0)}</b></span>'
+                        for key, label in VAL_LABELS if val.get(key) is not None)
     fin = (f.get("fin_indicators_recent") or [{}])[0]
     chips_fin = "".join(f'<span class="chip">{l} <b>{fnum(fin.get(l))}</b></span>'
                         for l in ("加权ROE%", "销售毛利率%", "销售净利率%", "资产负债率%", "净利润现金含量")
@@ -662,7 +666,9 @@ def main() -> int:
     if decision and (decision.get("plans") or [{}])[0].get("entry"):
         p = decision["plans"][0]
         if p.get("stop"):
-            sizing = position_plan(float(p["entry"]), float(p["stop"]))
+            lot = int(p.get("lot_size") or
+                      (1 if (decision.get("asset_type") in ("us-stock", "hk-stock")) else 100))
+            sizing = position_plan(float(p["entry"]), float(p["stop"]), lot_size=lot)
 
     ident = digest.get("identity") or {}
     title = args.title or f"{ident.get('name')}（{ident.get('thscode')}）中长线分析"

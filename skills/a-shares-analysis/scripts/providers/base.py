@@ -41,6 +41,7 @@ CAPABILITIES = {
     "index_quote",       # index snapshot
     "index_constituents",
     "hot_rank_trend",    # per-stock heat-rank daily series
+    "sec_fundamentals",   # US SEC EDGAR companyfacts (keyless, official)
 }
 
 # Error codes shared across providers (kept aligned with fuyao's envelope).
@@ -126,6 +127,11 @@ class DataProvider(Protocol):
         ...
 
     def hot_rank_trend(self, thscode: str, start_date: str, end_date: str) -> list[dict]:
+        ...
+
+    def sec_fundamentals(self, symbol: str) -> dict:
+        """US SEC EDGAR companyfacts, normalized: shares_outstanding +
+        income_annual[] / balance_latest / flows_latest (USD)."""
         ...
 
     # --- meta ---------------------------------------------------------------

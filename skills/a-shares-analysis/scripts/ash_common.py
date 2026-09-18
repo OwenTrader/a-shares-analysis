@@ -36,6 +36,27 @@ def now_cst() -> datetime:
     return datetime.now(CST)
 
 
+def now_in(tz_name: str) -> datetime:
+    """Current moment in an IANA tz (e.g. 'America/New_York') for market-aware freshness."""
+    from zoneinfo import ZoneInfo
+
+    return datetime.now(ZoneInfo(tz_name))
+
+
+def last_expected_trading_day(tz_name: str, ref: datetime | None = None) -> str:
+    """Most recent weekday (Mon-Fri) date in the given market tz.
+
+    Exchange holidays are NOT modelled (V1 heuristic): freshness tolerance of
+    5 days in the quality gate absorbs long weekends; only persistent lag fails.
+    """
+    from zoneinfo import ZoneInfo
+
+    d = (ref or datetime.now(ZoneInfo(tz_name))).date()
+    while d.weekday() >= 5:  # Sat/Sun -> step back to Friday
+        d -= timedelta(days=1)
+    return d.isoformat()
+
+
 def ms_to_date(ms: int | float) -> str:
     """Millisecond Unix timestamp -> YYYY-MM-DD in Asia/Shanghai."""
     return datetime.fromtimestamp(int(ms) / 1000, CST).strftime("%Y-%m-%d")

@@ -73,6 +73,8 @@ PY="SKILL_DIR/.venv/Scripts/python.exe"; S="SKILL_DIR/scripts"
 "$PY" "$S/resolve_ticker.py" 600519
 "$PY" "$S/resolve_ticker.py" 白酒 --type a-share-index
 "$PY" "$S/resolve_ticker.py" 酒ETF --type fund-etf         # 场内基金（仅 ETF 有行情）
+"$PY" "$S/resolve_ticker.py" AAPL --type us-stock    # 美股（零Key，Yahoo+SEC）
+"$PY" "$S/resolve_ticker.py" Tencent --type hk-stock       # 港股（零Key，Yahoo）
 
 # 快照 + digest + 交付
 "$PY" "$S/fetch_snapshot.py" --thscode 600519.SH --bars 600 --benchmark 000300.SH
@@ -143,7 +145,9 @@ PY="SKILL_DIR/.venv/Scripts/python.exe"; S="SKILL_DIR/scripts"
 | 整手 | 100 股及整数倍 | 仓位公式必须 floor 到整手 |
 | 分红除权 | 现金分红/送股 | 技术分析用前复权价；股息率在 digest.fundamentals.dividends |
 | 北交所 | ±30%，代码 .BJ | 默认支持但流动性差，报告中提示 |
-| 场内 ETF | 多数 T+1；跨境/债券/货币/黄金 ETF **T+0**；无印花税；一手 100 份 | `--type fund-etf`；估值/财务/热榜降级——基本面按「跟踪指数+持仓+费率」联网检索替代；行情仅 ETF |
+| 场内 ETF | 多数 T+1；跨境/债券/货币/黄金 ETF **T+0**；无印花税；一手 100 份 |
+| 美股 | T+0 回转（PDT 约束保证金户）；无涨跌停；1 股起；USD；零Key | us-stock：基准 ^GSPC，SEC 财报节奏与盘前盘后缺口入风控 |
+| 港股 | T+0 回转；无涨跌停；board lot 因券商而异；HKD；零Key | hk-stock：基准 ^HSI，lot 按 1 股粒度并提示人工确认 | `--type fund-etf`；估值/财务/热榜降级——基本面按「跟踪指数+持仓+费率」联网检索替代；行情仅 ETF |
 
 ## 5. 反模式清单（违者即错）
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0（2026-09-18）
+
+- **美股分析（Yahoo + SEC EDGAR，全程零 Key）**：`--type us-stock`；
+  Yahoo 前复权日线/快照/指数基准（^GSPC，交易所时区感知 + 市场化新鲜度判定）；
+  SEC companyfacts → FY 收入/净利/EPS/资产/现金流 + 股本 → 本地 FY 估值
+  （市值/PE/PS）；估值 chips 通用化；美股规则入风控（T+0 回转/PDT/盘前盘后/1 股起）
+- **港股分析（Yahoo，零 Key）**：`--type hk-stock`，基准 ^HSI，HKD，
+  board lot 按 1 股粒度并强制提示人工确认
+- 跨市场纠错：a-share 未命中自动回退基金与美/港股候选（标注 asset_type）；
+  纠错按 asset_type 自动选 provider（美/港股不要求扶摇 Key）
+- 仓位 lot 参数化（A 股 100 股 / 美股 1 股 / 港股待确认）；journal 按
+  decision.asset_type 路由结算 K 线
+- AAPL 实战闭环验证（600 根日线 + FY2020-2025 SEC 财报 + WAIT 研判归档）
+
+
 ## 0.2.0（2026-09-17）
 
 - **场内基金（ETF）分析支持（Phase 1）**：`fund_kline` / `fund_quote` 数据能力；

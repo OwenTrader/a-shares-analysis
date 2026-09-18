@@ -37,10 +37,35 @@ def _make_fuyao() -> DataProvider:
     return FuyaoProvider(key)
 
 
+def _make_yahoo() -> DataProvider:
+    from providers.yahoo import YahooProvider
+
+    return YahooProvider()  # keyless (unofficial endpoints, browser UA)
+
+
+def _make_sec() -> DataProvider:
+    from providers.sec import SecProvider
+
+    return SecProvider()    # keyless (official SEC EDGAR)
+
+
 _FACTORY_NAMES = {
     "fuyao": _make_fuyao,
+    "yahoo": _make_yahoo,   # US/HK market data (and global index benchmarks)
+    "sec": _make_sec,       # US fundamentals (SEC EDGAR)
     # "tushare": _make_tushare,   # <- register future providers here
 }
+
+# market routing: asset_type -> (market provider, fundamentals provider|None)
+# us/hk are fully KEYLESS: no fuyao API key needed for those universes
+MARKET_ROUTES = {
+    "us-stock": ("yahoo", "sec"),
+    "hk-stock": ("yahoo", None),
+}
+
+
+def route_market(asset_type: str) -> tuple[str, str | None]:
+    return MARKET_ROUTES.get(asset_type, ("fuyao", "fuyao"))
 
 
 def available_providers() -> list[str]:
@@ -58,4 +83,5 @@ def get_provider(name: str | None = None) -> DataProvider:
     return factory()
 
 
-__all__ = ["get_provider", "available_providers", "DataProvider", "ProviderError"]
+__all__ = ["get_provider", "available_providers", "route_market",
+           "DataProvider", "ProviderError"]

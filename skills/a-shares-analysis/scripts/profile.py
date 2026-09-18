@@ -58,32 +58,37 @@ def effective_profile() -> dict:
             "note": "用户未提供资金信息，使用默认档（10万/单次10%/单笔风险2%）"}
 
 
-def position_plan(price: float, stop: float, profile: dict | None = None) -> dict:
-    """Shares under BOTH constraints: risk budget AND max-position cap (A股整手).
+def position_plan(price: float, stop: float, profile: dict | None = None,
+                  lot_size: int = 100) -> dict:
+    """Shares under BOTH constraints: risk budget AND max-position cap.
 
-    Also derives 1-lot thresholds so an "不可执行" verdict comes with actionable
-    numbers: what capital / cap% / risk% would make one lot (100 股) fit.
+    lot_size: A-share 100（整手）; US 1 股；HK board lot 未确认时按 1 股粒度。
+    Also derives min-lot thresholds so an "不可执行" verdict comes with
+    actionable numbers: what capital / cap% / risk% would make one lot fit.
     """
     p = profile or effective_profile()
     capital, max_pos, risk = p["total_capital"], p["max_position_pct"], p["risk_pct"]
+    lot = max(1, int(lot_size))
     per_share_risk = abs(price - stop)
     if per_share_risk <= 0 or price <= 0:
         return {"shares": 0, "binding": "invalid_prices"}
-    by_risk = int(capital * risk / 100 / per_share_risk // 100) * 100
-    by_cap = int(capital * max_pos / 100 / price // 100) * 100
+    by_risk = int(capital * risk / 100 / per_share_risk // lot) * lot
+    by_cap = int(capital * max_pos / 100 / price // lot) * lot
     shares = min(by_risk, by_cap)
     binding = "risk_pct" if by_risk <= by_cap else "max_position_pct"
     position_value = shares * price
-    # --- 1-lot thresholds (always computed; power the not-executable guidance) ---
-    cost_1lot = 100 * price
-    cap_pct_1lot = cost_1lot / capital * 100            # 一手占当前总资金 %
-    risk_pct_1lot = 100 * per_share_risk / capital * 100  # 一手止损损失占当前资金 %
+    # --- min-lot thresholds (always computed; power the not-executable guidance) ---
+    cost_1lot = lot * price
+    cap_pct_1lot = cost_1lot / capital * 100            # 一手/最小单位占当前总资金 %
+    risk_pct_1lot = lot * per_share_risk / capital * 100  # 一手止损损失占当前资金 %
     req_capital_by_cap = cost_1lot / (max_pos / 100) if max_pos > 0 else None
-    req_capital_by_risk = (100 * per_share_risk) / (risk / 100) if risk > 0 else None
+    req_capital_by_risk = (lot * per_share_risk) / (risk / 100) if risk > 0 else None
     thresholds = [c for c in (req_capital_by_cap, req_capital_by_risk) if c]
     min_capital_1lot = max(thresholds) if thresholds else None
+    unit = "股"
     return {
         "shares": shares,
+        "lot_size": lot,
         "shares_by_risk": by_risk,
         "shares_by_cap": by_cap,
         "binding_constraint": binding,
@@ -98,8 +103,8 @@ def position_plan(price: float, stop: float, profile: dict | None = None) -> dic
         "required_capital_by_cap": round(req_capital_by_cap, 0) if req_capital_by_cap else None,
         "required_capital_by_risk": round(req_capital_by_risk, 0) if req_capital_by_risk else None,
         "min_capital_1lot": round(min_capital_1lot, 0) if min_capital_1lot else None,
-        "note": ("不足一手（100股）——按当前风险/仓位约束不可执行，"
-                 "需提高资金或单笔风险容忍，或等待更近的止损位" if shares < 100 else None),
+        "note": (f"不足最小交易单位（{lot}{unit}）——按当前风险/仓位约束不可执行，"
+                 "需提高资金或单笔风险容忍，或等待更近的止损位" if shares < lot else None),
     }
 
 

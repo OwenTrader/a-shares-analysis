@@ -53,7 +53,7 @@ def test_sizing_not_executable_under_one_lot():
     out = position_plan(1215.7, 1146.5, {**DEFAULTS})
     assert out["shares"] == 0
     assert out["shares_by_risk"] == 0
-    assert out["note"] and "不足一手" in out["note"]
+    assert out["note"] and "不足最小交易单位" in out["note"]
 
 
 def test_one_lot_thresholds_are_actionable():

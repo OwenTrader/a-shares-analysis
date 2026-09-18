@@ -64,13 +64,14 @@ def _validate(decision: dict) -> list[str]:
         if tp1 <= entry:
             problems.append(f"plans[{i}] tp1 must be above entry")
         shares = p.get("shares")
+        lot = int(p.get("lot_size") or 100)
         if shares is not None:
-            if shares < 100:
+            if shares < lot:
                 p["shares"] = 0
-                p["shares_note"] = "低于一手(100股)，视为不建议建仓"
-            elif shares % 100:
-                p["shares"] = int(shares // 100) * 100
-                p["shares_note"] = f"A股按整手交易，已向下取整为 {p['shares']}"
+                p["shares_note"] = f"低于最小交易单位({lot}股)，视为不建议建仓"
+            elif shares % lot:
+                p["shares"] = int(shares // lot) * lot
+                p["shares_note"] = f"按最小交易单位 {lot} 股取整，已向下取整为 {p['shares']}"
         rrr = round((tp1 - entry) / (entry - stop), 2)
         if p.get("rrr_tp1") not in (None, rrr):
             p["rrr_tp1_reported"] = p.get("rrr_tp1")
@@ -191,12 +192,17 @@ def _settle_plan(plan: dict, bars: list[dict]) -> dict:
 
 
 def _bars_since(provider, decision: dict, thscode: str, end_ms: int) -> list[dict]:
-    """Post-decision daily bars (or fund/NAV bars) for settlement, ascending."""
+    """Post-decision daily bars for settlement, routed by market."""
     from ash_common import date_to_ms
+    from providers import get_provider, route_market
 
     start = date_to_ms(decision["date"]) + 1
-    if decision.get("asset_type") == "fund-etf" and provider.has("fund_kline"):
+    at = decision.get("asset_type") or ""
+    if at == "fund-etf" and provider.has("fund_kline"):
         return provider.fund_kline(thscode, start, end_ms)
+    if at in ("us-stock", "hk-stock"):
+        market = get_provider(route_market(at)[0])   # yahoo (keyless)
+        return market.daily_kline(thscode, start, end_ms)
     return provider.daily_kline(thscode, start, end_ms)
 
 

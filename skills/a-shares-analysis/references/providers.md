@@ -96,6 +96,8 @@ _FACTORY_NAMES = {"fuyao": _make_fuyao, "tushare": _make_tushare}
 |------|---------------|------|
 | search / daily_kline / quote / calendar | ✓ | 日线前复权，窗口 ≤10 年 |
 | fund_kline / fund_quote | ✓ | **仅 ETF**，前复权，窗口 ≤5 自然年（LOF/场外 3004） |
+| **yahoo**（us/hk 行情，零Key） | search / daily_kline(adjclose) / quote / index_kline | 非官方端点：浏览器 UA + 0.6s 限速 + 429 退避；日期按交易所时区 |
+| **sec**（us 基本面，零Key） | sec_fundamentals | SEC EDGAR 官方：company_tickers + companyfacts(XBRL) → FY 收入/净利/EPS/资产/现金流 + 股本 |
 | valuation | ✓ | 仅最新快照，无历史分位 |
 | fin_indicators / 三大报表 | ✓ | 按报告期逐期 |
 | corp_actions | ✓ | 原始分红/送股事件 |

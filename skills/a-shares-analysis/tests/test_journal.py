@@ -35,7 +35,7 @@ def test_validate_rounds_to_lots():
     d = base_decision(plans=[{"entry": 100, "stop": 90, "tp1": 120, "shares": 250}])
     _validate(d)
     assert d["plans"][0]["shares"] == 200
-    assert "整手" in d["plans"][0]["shares_note"]
+    assert "取整" in d["plans"][0]["shares_note"]
 
 
 def test_validate_wait_needs_no_plans():

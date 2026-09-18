@@ -86,10 +86,18 @@ def _safe(provider, section: str, fn, errors: list, skip: set[str]):
         return None
 
 
+def _zone(tz_name: str):
+    from zoneinfo import ZoneInfo
+
+    return ZoneInfo(tz_name)
+
+
 def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
-                   adjust: str, benchmark: str, skip: set[str], now: datetime) -> dict:
+                   adjust: str, benchmark: str, skip: set[str], now: datetime,
+                   fundamentals_provider=None, market: str = "CN") -> dict:
     errors: list[dict] = []
     notes: list[str] = []
+    external = market != "CN"   # us-stock / hk-stock ride the keyless yahoo route
 
     # -- identity (cheap re-verification; resolve_ticker is the real gate) ----
     identity_hits = provider.search(thscode, asset_type=asset_type, limit=5)
@@ -99,9 +107,16 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
 
     start_ms, end_ms = window_ms(bars_wanted, now)
 
-    # -- calendar: freshness baseline ----------------------------------------
-    trading_days = _safe(provider, "calendar", provider.calendar, errors, skip) or []
-    last_trading_day = trading_days[-1] if trading_days else None
+    # -- calendar: freshness baseline (A-share calendar only for CN markets) --
+    trading_days: list[str] = []
+    last_trading_day = None
+    if external:
+        from zoneinfo import ZoneInfo
+
+        tz_name = "America/New_York" if market == "US" else "Asia/Hong_Kong"
+    else:
+        trading_days = _safe(provider, "calendar", provider.calendar, errors, skip) or []
+        last_trading_day = trading_days[-1] if trading_days else None
 
     # -- core kline -----------------------------------------------------------
     # ETF window guard: fuyao fund market historical caps at 5 natural years
@@ -125,13 +140,34 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
     analysis = compute(bars)
     last_bar_date = bars[-1]["date"]
 
-    fresh = last_trading_day is None or last_bar_date >= last_trading_day
-    days_behind = 0
-    if not fresh and trading_days:
-        today_s = now.strftime("%Y-%m-%d")
-        days_behind = len([d for d in trading_days if last_bar_date < d <= today_s])
+    if external:
+        # market-aware freshness: exchange timezone, weekday heuristic (no
+        # holiday calendar for US/HK in V1 — the 5-day tolerance absorbs gaps)
+        meta_tz = provider.market_meta(thscode).get("exchangeTimezoneName") if hasattr(
+            provider, "market_meta") else None
+        tz_name = meta_tz or tz_name
+        from ash_common import last_expected_trading_day
 
-    # staleness beyond 5 trading days (suspension or feed lag) fails the gate;
+        expected = last_expected_trading_day(tz_name, now.astimezone(_zone(tz_name)))
+        fresh = last_bar_date >= expected
+        days_behind = 0
+        if not fresh:
+            from datetime import date as _date, timedelta as _td
+
+            d = _date.fromisoformat(last_bar_date)
+            stop = _date.fromisoformat(expected)
+            while d < stop:
+                d += _td(days=1)
+                if d.weekday() < 5:
+                    days_behind += 1
+    else:
+        fresh = last_trading_day is None or last_bar_date >= last_trading_day
+        days_behind = 0
+        if not fresh and trading_days:
+            today_s = now.strftime("%Y-%m-%d")
+            days_behind = len([d for d in trading_days if last_bar_date < d <= today_s])
+
+    # staleness beyond 5 trading days (suspension/feed lag) fails the gate;
     # within 5 is noted but acceptable for medium/long-term daily-bar analysis
     ok = len(bars) >= 60 and days_behind <= 5
     if len(bars) < 60:
@@ -140,7 +176,10 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
     if len(bars) < 250:
         notes.append("日线不足 250 根：年线（MA250）及 250d 区间指标缺失，长期结构判断受限")
     if not fresh:
-        notes.append(f"最后一根日线为 {last_bar_date}，落后最新交易日 {days_behind} 个交易日——可能停牌或数据滞后，请核实")
+        stale_why = ("可能为长假日或数据滞后（美/港股无涨跌停停牌概念），请核实"
+                     if external else
+                     f"可能停牌或数据滞后，请核实")
+        notes.append(f"最后一根日线为 {last_bar_date}，落后预期最新交易日 {days_behind} 个交易日——{stale_why}")
 
     snapshot: dict = {
         "meta": {
@@ -149,6 +188,9 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
             "asset_type": asset_type, "list_date": identity.get("list_date"),
             "end_date": identity.get("end_date"),
             "provider": provider.name, "adjust": adjust,
+            "market": market,
+            "currency": "CNY",
+            "lot_size": 100,
             "window": {"first": bars[0]["date"], "last": last_bar_date, "bars": len(bars)},
             "benchmark_thscode": benchmark,
             "generated_at": now.strftime("%Y-%m-%d %H:%M:%S %z"),
@@ -158,6 +200,11 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
                     "sections_errors": errors, "notes": notes},
         "daily": {"bars": bars, "analysis": analysis},
     }
+    if external:
+        snapshot["meta"]["currency"] = "USD" if market == "US" else "HKD"
+        snapshot["meta"]["lot_size"] = 1
+        if market == "HK":
+            notes.append("港股每手股数（board lot）因券商标的不同未自动获取，股数计算按 1 股粒度，下单前须人工确认整手")
 
     # -- quote ----------------------------------------------------------------
     if asset_type == "a-share-index":
@@ -169,6 +216,53 @@ def build_snapshot(provider, thscode: str, asset_type: str, bars_wanted: int,
     quote = _safe(provider, "quote", quote_fn, errors, skip)
     if quote:
         snapshot["quote"] = quote
+
+    # -- US fundamentals: SEC EDGAR -> existing statements/valuation schema ----
+    if market == "US" and fundamentals_provider is not None:
+        try:
+            sec = fundamentals_provider.fundamentals(thscode)
+            income = [{"fiscal_year": r["fiscal_year"], "period_end_ms": None,
+                       "operating_income": r.get("revenue"),
+                       "parent_holder_net_profit": r.get("net_income"),
+                       "basic_eps": r.get("eps_diluted")}
+                      for r in sec.get("income_annual") or []]
+            bal = sec.get("balance_latest") or {}
+            assets, liab = bal.get("assets"), bal.get("liabilities")
+            stmts = {"income_annual": income}
+            if assets is not None:
+                fy = int((bal.get("end") or "0000")[:4])
+                stmts["balance_annual"] = [{
+                    "fiscal_year": fy, "assets_total": assets,
+                    "total_debt": bal.get("long_term_debt") or liab,
+                    "holder_equity_total": (assets - liab) if liab is not None else None,
+                    "cash": bal.get("cash")}]
+            fl = sec.get("flows_latest") or {}
+            if fl.get("operating_cf") is not None:
+                stmts["cashflow_annual"] = [{
+                    "fiscal_year": int((fl.get("end") or "0000")[:4]),
+                    "act_cash_flow_net": fl.get("operating_cf"),
+                    "pay_fixed_assets_etc_cash": fl.get("capex")}]
+            if stmts:
+                snapshot["statements"] = stmts
+            snapshot["sec_fundamentals"] = sec
+            # local valuation (FY basis): market cap from live price x shares
+            price = (snapshot.get("quote") or {}).get("last")
+            shares = sec.get("shares_outstanding")
+            if price and shares:
+                mc = price * shares
+                latest = (sec.get("income_annual") or [{}])[-1]
+                snapshot["valuation"] = {
+                    "symbol": thscode, "currency": "USD",
+                    "market_cap": round(mc, 2), "shares_outstanding": shares,
+                    "pe_fy": round(mc / latest["net_income"], 2)
+                    if latest.get("net_income") else None,
+                    "ps_fy": round(mc / latest["revenue"], 2)
+                    if latest.get("revenue") else None,
+                }
+        except ProviderError as exc:
+            errors.append({"section": "sec_fundamentals", "error": f"[{exc.kind}] {exc.message}"})
+        except Exception as exc:  # noqa: BLE001
+            errors.append({"section": "sec_fundamentals", "error": f"[local] {exc}"})
 
     # -- benchmark & relative strength ----------------------------------------
     bench = {"thscode": benchmark}
@@ -290,10 +384,22 @@ def main() -> int:
 
     now = now_cst()
     skip = {s.strip() for s in args.skip.split(",") if s.strip()}
+    from providers import route_market
+
+    market_name, fundamentals_name = route_market(args.asset_type)
+    market = "US" if args.asset_type == "us-stock" else (
+        "HK" if args.asset_type == "hk-stock" else "CN")
+    benchmark = args.benchmark
+    if benchmark == DEFAULT_BENCHMARK:  # switch default benchmark by market
+        benchmark = {"US": "^GSPC", "HK": "^HSI"}.get(market, DEFAULT_BENCHMARK)
     try:
-        provider = get_provider()
+        provider = get_provider(market_name)
+        fundamentals_provider = (get_provider(fundamentals_name)
+                                 if fundamentals_name else None)
         snap = build_snapshot(provider, args.thscode, args.asset_type,
-                              args.bars, args.adjust, args.benchmark, skip, now)
+                              args.bars, args.adjust, benchmark, skip, now,
+                              fundamentals_provider=fundamentals_provider,
+                              market=market)
     except ProviderError as exc:
         if exc.kind == ERR_AUTH:
             emit({"status": "no_key", "error": exc.message, "exit": EXIT_NEEDS_INPUT})
