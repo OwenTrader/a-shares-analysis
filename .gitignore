@@ -17,3 +17,6 @@ reports/
 # OS noise
 Thumbs.db
 .DS_Store
+
+# local agent client state
+.zcode/
