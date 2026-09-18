@@ -34,6 +34,13 @@ assistant: *"analyze the mid/long-term opportunity of Kweichow Moutai
 conversationally (browser auto-opened, paste the key, done) and asks your
 capital profile once.
 
+**Multi-market out of the box** — ask naturally, no flags needed:
+
+- A-shares & ETF & indices: “分析贵州茅台的中长线机会” / “酒ETF 怎么样” /
+  “白酒行业指数如何” (needs the free Fuyao key, obtained conversationally)
+- **US / HK stocks need NO key at all**: “分析特斯拉” / “快速看看苹果” /
+  “腾讯港股怎么样” (Yahoo quotes + SEC EDGAR fundamentals, zero config)
+
 > 100% free & open source (Apache-2.0). Developer WeChat: **tradinginfinity**.
 > AI-generated output — research/education only, NOT investment advice.
 
@@ -89,6 +96,13 @@ capital profile once.
 Key 到对话 → AI 配置并真实验证 → 播报能力清单（个股中长线分析 / 快速看盘 /
 指数板块分析 / 决策复盘）→ 你说出想分析的标的。AI 还会询问一次你的资金画像
 （总资金 / 单次仓位上限 / 单笔风险，默认 10 万/10%/2%）。
+
+**多市场开箱即用**（自然语言即可，无需任何参数）：
+
+- A 股 / ETF / 指数：「分析贵州茅台的中长线机会」「酒ETF 怎么样」「白酒行业指数如何」
+  （需免费扶摇 Key，对话式引导获取）
+- **美股 / 港股完全零 Key**：「分析特斯拉」「快速看看苹果」「腾讯港股怎么样」
+  （Yahoo 行情 + SEC EDGAR 官方财报，零配置直接用）
 
 <details>
 <summary>进阶：手动 CLI（可选，普通用户无需使用）</summary>
